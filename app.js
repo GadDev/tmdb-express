@@ -3,12 +3,49 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+const session = require('express-session');
+const dotenv = require('dotenv');
+dotenv.config({ path: `.env.${process.env.NODE_ENV}` });
+
+const SECRET = process.env.SECRET;
+/// =============PASSPORT FILES ===============///
+const passport = require('passport');
+const GitHubStrategy = require('passport-github').Strategy;
+/// =============PASSPORT FILES ===============///
 
 var indexRouter = require('./routes/index');
 
 var app = express();
 const helmet = require('helmet');
 app.use(helmet());
+
+/// =============PASSPORT CONFIG ===============///
+app.use(
+	session({
+		secret: SECRET,
+		resave: false,
+		saveUninitialized: true,
+	})
+);
+app.use(passport.initialize());
+app.use(passport.session());
+
+const passportConfig = require('./config');
+passport.use(
+	new GitHubStrategy(
+		passportConfig,
+		function (accessToken, refreshToken, profile, cb) {
+			console.log(profile);
+			return cb(null, profile);
+		}
+	)
+);
+passport.serializeUser((user, cb) => {
+	cb(null, user);
+});
+passport.deserializeUser((user, cb) => {
+	cb(null, user);
+});
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
